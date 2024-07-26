@@ -80,6 +80,43 @@ enum
     kQuickPollInterval = 1
 };
 
+enum {
+    INDUCTIVE_FW_CTRL_CMD_SET_CLOAK               = 0x7,
+    INDUCTIVE_FW_CTRL_CMD_DISABLE_DEBUGPOWER      = 0x20,
+    INDUCTIVE_FW_CTRL_CMD_DISABLE_DISP_COEX       = 0x25,
+    INDUCTIVE_FW_CTRL_CMD_SET_DEMO_MODE           = 0x28,
+};
+
+struct SMCAdapterParamHelper {
+    uint32_t valid;           /* To log or not to log the parameter */
+    const OSSymbol *keyObj;   /* Dict key obj associated with the parameter */
+    OSObject *valObj;         /* ValueObj - a catch-all for OSArray/OSNumber/... */
+    
+    SMCAdapterParamHelper (uint32_t _valid, const OSSymbol *_key, UInt32 _val) : valid (_valid), keyObj (_key) {
+        valObj = OSNumber::withNumber((unsigned long long)_val, 8*sizeof(_val)); \
+    }
+    
+    SMCAdapterParamHelper (uint32_t _valid, const OSSymbol *_key, UInt16 _val) : valid (_valid), keyObj (_key) {
+        valObj = OSNumber::withNumber((unsigned long long)_val, 8*sizeof(_val));
+    }
+
+    SMCAdapterParamHelper (uint32_t _valid, const OSSymbol *_key, UInt8 _val) : valid (_valid), keyObj (_key) {
+        valObj = OSNumber::withNumber((unsigned long long)_val, 8*sizeof(_val));
+    }
+
+    ~SMCAdapterParamHelper () {
+        if (valObj) {
+            OSSafeReleaseNULL(valObj);
+        }
+    }
+
+    private:
+    SMCAdapterParamHelper ();
+
+};
+
+
+
 #define kErrorRetryAttemptsExceeded         "Read Retry Attempts Exceeded"
 #define kErrorOverallTimeoutExpired         "Overall Read Timeout Expired"
 #define kErrorZeroCapacity                  "Capacity Read Zero"
@@ -143,18 +180,20 @@ OSDefineMetaClassAndStructors(AppleSmartBattery, IOPMPowerSource)
  *     
  ******************************************************************************/
 
-AppleSmartBattery * AppleSmartBattery::smartBattery(void)
+AppleSmartBattery *
+AppleSmartBattery::smartBattery(void)
 {
-	AppleSmartBattery * me;
-	me = new AppleSmartBattery;
-	
-	if (me && !me->init())
-	{
-		me->release();
-		return NULL;
-	}
-	
-	return me;
+    static int asbm = 0;
+    AppleSmartBattery  *me;
+    me = new AppleSmartBattery;
+
+    if (asbm || (me && !me->init())) {
+        me->release();
+        asbm++;
+        return NULL;
+    }
+
+    return me;
 }
 
 /******************************************************************************
@@ -162,7 +201,7 @@ AppleSmartBattery * AppleSmartBattery::smartBattery(void)
  *
  ******************************************************************************/
 
-bool AppleSmartBattery::init(void) 
+bool AppleSmartBattery::init(void)
 {
     if (!super::init()) {
         return false;
@@ -170,9 +209,6 @@ bool AppleSmartBattery::init(void)
 
     fProvider = NULL;
     fWorkLoop = NULL;
-    fPollTimer = NULL;
-
-    fCellVoltages = NULL;
 
     return true;
 }
@@ -617,7 +653,7 @@ void AppleSmartBattery::incompleteReadTimeOut(void)
 
 void AppleSmartBattery::clearBatteryState(bool do_update)
 {
-    DebugLog("clearBatteryState: do_update = %s\n", do_update == true ? "true" : "false");
+    
     
     // Only clear out battery state; don't clear manager state like AC Power.
     // We just zero out the int and bool values, but remove the OSType values.
