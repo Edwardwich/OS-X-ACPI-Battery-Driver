@@ -12,6 +12,7 @@
 		0C4B240714598CD00080D960 /* AppleSmartBattery.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0C4B240514598CD00080D960 /* AppleSmartBattery.cpp */; };
 		0C4B240814598CD00080D960 /* AppleSmartBattery.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C4B240614598CD00080D960 /* AppleSmartBattery.h */; };
 		84440B911838131700779871 /* ACAdapter.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 84440B901838131700779871 /* ACAdapter.cpp */; };
+		C5A4C09C2C53CA1100EA8849 /* libkmod.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C5A4C09B2C53CA1100EA8849 /* libkmod.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		84440B901838131700779871 /* ACAdapter.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; path = ACAdapter.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		844778D216E7FC2400B27895 /* makefile */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = SOURCE_ROOT; usesTabs = 1; };
 		84D49F6818381F260009CA74 /* IOPMPrivate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IOPMPrivate.h; sourceTree = "<group>"; };
+		C5A4C09B2C53CA1100EA8849 /* libkmod.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libkmod.a; path = MacKernelSDK/Library/x86_64/libkmod.a; sourceTree = "<group>"; };
 		ED6DFB381CC677BD00FF57A6 /* SSDT-ACPIBATT.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-ACPIBATT.dsl"; sourceTree = SOURCE_ROOT; };
 		ED7BCA381CFE648400D36255 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		EDA40AAC1CFDE4BE00491402 /* SSDT-BATC.dsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "SSDT-BATC.dsl"; sourceTree = SOURCE_ROOT; };
@@ -40,6 +42,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C5A4C09C2C53CA1100EA8849 /* libkmod.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -67,6 +70,7 @@
 		0C4B238014598AD20080D960 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				C5A4C09B2C53CA1100EA8849 /* libkmod.a */,
 				0C4B238114598AD20080D960 /* Other Frameworks */,
 			);
 			name = Frameworks;
@@ -165,6 +169,7 @@
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				English,
 				en,
 			);
 			mainGroup = 0C4B237114598AD10080D960;
@@ -288,24 +293,42 @@
 		0C4B239114598AD20080D960 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "AppleSmartBatteryManager/ACPIBatteryManager-Prefix.pch";
 				INFOPLIST_FILE = "AppleSmartBatteryManager/ACPIBatteryManager-Info.plist";
+				KERNEL_EXTENSION_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				MODULE_NAME = org.rehabman.driver.AppleSmartBatteryManager;
 				PRODUCT_NAME = ACPIBatteryManager;
+				SDKROOT = macosx;
 			};
 			name = Debug;
 		};
 		0C4B239214598AD20080D960 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = x86_64;
 				COMBINE_HIDPI_IMAGES = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "AppleSmartBatteryManager/ACPIBatteryManager-Prefix.pch";
 				INFOPLIST_FILE = "AppleSmartBatteryManager/ACPIBatteryManager-Info.plist";
+				KERNEL_EXTENSION_HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				KERNEL_FRAMEWORK_HEADERS = "$(PROJECT_DIR)/MacKernelSDK/Headers";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/MacKernelSDK/Library/x86_64",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 10.9;
 				MODULE_NAME = org.rehabman.driver.AppleSmartBatteryManager;
 				PRODUCT_NAME = ACPIBatteryManager;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
