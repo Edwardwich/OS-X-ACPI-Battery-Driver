@@ -2,14 +2,14 @@
  * Copyright (c) 2005 Apple Computer, Inc. All rights reserved.
  *
  * @APPLE_LICENSE_HEADER_START@
- * 
+ *
  * This file contains Original Code and/or Modifications of Original Code
  * as defined in and that are subject to the Apple Public Source License
  * Version 2.0 (the 'License'). You may not use this file except in
  * compliance with the License. Please obtain a copy of the License at
  * http://www.opensource.apple.com/apsl/ and read it before using this
  * file.
- * 
+ *
  * The Original Code and all software distributed under the License are
  * distributed on an 'AS IS' basis, WITHOUT WARRANTY OF ANY KIND, EITHER
  * EXPRESS OR IMPLIED, AND APPLE HEREBY DISCLAIMS ALL SUCH WARRANTIES,
@@ -17,7 +17,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR NON-INFRINGEMENT.
  * Please see the License for the specific language governing rights and
  * limitations under the License.
- * 
+ *
  * @APPLE_LICENSE_HEADER_END@
  */
 
@@ -42,9 +42,14 @@ enum {
     kMyOnPowerState = 1
 };
 
+enum {
+    kInhibitChargingCmd = 0,
+    kDisableInflowCmd
+};
+
 static IOPMPowerState myTwoStates[2] = {
-    {kIOPMPowerStateVersion1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-    {kIOPMPowerStateVersion1, kIOPMPowerOn, kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0}
+    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {1, kIOPMPowerOn, kIOPMPowerOn, kIOPMPowerOn, 0, 0, 0, 0, 0, 0, 0, 0}
 };
 
 OSDefineMetaClassAndStructors(AppleSmartBatteryManager, IOService)
@@ -89,6 +94,8 @@ IOService *AppleSmartBatteryManager::probe(IOService *provider,
 }
 
 #endif // DEBUG
+
+
 
 /******************************************************************************
  * AppleSmartBatteryManager::start
@@ -144,8 +151,8 @@ bool AppleSmartBatteryManager::start(IOService *provider)
     // Join power management so that we can get a notification early during
     // wakeup to re-sample our battery data. We don't actually power manage
     // any devices.
-	
-	PMinit();
+    
+    PMinit();
     registerPowerDriver(this, myTwoStates, 2);
     provider->joinPMtree(this);
 
@@ -165,28 +172,28 @@ bool AppleSmartBatteryManager::start(IOService *provider)
 
 #if 0
     //REVIEW_REHABMAN: I don't think this makes any sense...
-	int value = getPlatform()->numBatteriesSupported();
-	DebugLog("Battery Supported Count(s) %d.\n", value);
+    int value = getPlatform()->numBatteriesSupported();
+    DebugLog("Battery Supported Count(s) %d.\n", value);
 
     // TODO: Create battery array to hold battery objects if more than one battery in the system
-	if (value > 1)
-    { 
-		if (kIOReturnSuccess == fProvider->evaluateInteger("_STA", &fBatterySTA)) {
-			if (fBatterySTA & BATTERY_PRESENT) {
-				goto populateBattery;
-			} else {
-				goto skipBattery;
-			}
-		}
-	}
+    if (value > 1)
+    {
+        if (kIOReturnSuccess == fProvider->evaluateInteger("_STA", &fBatterySTA)) {
+            if (fBatterySTA & BATTERY_PRESENT) {
+                goto populateBattery;
+            } else {
+                goto skipBattery;
+            }
+        }
+    }
 #endif
 
 populateBattery:
 
-	fBattery = AppleSmartBattery::smartBattery();
+    fBattery = AppleSmartBattery::smartBattery();
 
-	if(!fBattery) 
-		return false;
+    if(!fBattery)
+        return false;
 
     // Command gate for ACPIBattery
     fBatteryGate = IOCommandGate::commandGate(fBattery);
@@ -196,12 +203,12 @@ populateBattery:
     wl->addEventSource(fBatteryGate);
 
     fBattery->attach(this);
-	fBattery->start(this);
+    fBattery->start(this);
 
 skipBattery:
 
     this->setName("AppleSmartBatteryManager");
-	this->registerService(0);
+    this->registerService(0);
 
     return true;
 }
@@ -212,7 +219,7 @@ skipBattery:
 
 void AppleSmartBatteryManager::stop(IOService *provider)
 {
-	DebugLog("AppleSmartBatteryManager::stop: called\n");
+    DebugLog("AppleSmartBatteryManager::stop: called\n");
 
     fBattery->detach(this);
     
@@ -238,7 +245,7 @@ void AppleSmartBatteryManager::stop(IOService *provider)
     fBatteryGate->free();
     fBatteryGate = NULL;
     
-	PMstop();
+    PMstop();
     
     super::stop(provider);
 }
@@ -331,12 +338,12 @@ IOReturn AppleSmartBatteryManager::setPollingInterval(int milliSeconds)
 
 IOReturn AppleSmartBatteryManager::setPowerState(unsigned long which, IOService *whom)
 {
-	IOReturn ret = IOPMAckImplied;
-	
-	DebugLog("AppleSmartBatteryManager::setPowerState: which = 0x%lx\n", which);
-	
+    IOReturn ret = IOPMAckImplied;
+    
+    DebugLog("AppleSmartBatteryManager::setPowerState: which = 0x%lx\n", which);
+    
     if(fBatteryGate)
-	{
+    {
         // We are waking from sleep - kick off a battery read to make sure
         // our battery concept is in line with reality.
         ret = fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::handleSystemSleepWake), (void*)this, (void*)!which);
@@ -354,32 +361,32 @@ IOReturn AppleSmartBatteryManager::message(UInt32 type, IOService *provider, voi
 {
     UInt32 batterySTA;
 
-	if( (kIOACPIMessageDeviceNotification == type)
+    if( (kIOACPIMessageDeviceNotification == type)
         && (kIOReturnSuccess == fProvider->evaluateInteger("_STA", &batterySTA))
-		&& fBatteryGate )
-	{
-		if (batterySTA ^ fBatterySTA) 
-		{
-			if (batterySTA & BATTERY_PRESENT) 
-			{
-				// Battery inserted
-				DebugLog("battery inserted\n");
-				fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::handleBatteryInserted));
-			}
-			else 
-			{
-				// Battery removed
-				DebugLog("battery removed\n");
-				fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::handleBatteryRemoved));
-			}
-		}
-		else 
-		{
+        && fBatteryGate )
+    {
+        if (batterySTA ^ fBatterySTA)
+        {
+            if (batterySTA & BATTERY_PRESENT)
+            {
+                // Battery inserted
+                DebugLog("battery inserted\n");
+                fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::handleBatteryInserted));
+            }
+            else
+            {
+                // Battery removed
+                DebugLog("battery removed\n");
+                fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::handleBatteryRemoved));
+            }
+        }
+        else
+        {
             // Just an alarm; re-read battery state.
-			DebugLog("polling battery state\n");
+            DebugLog("polling battery state\n");
             fBatteryGate->runAction(OSMemberFunctionCast(IOCommandGate::Action, fBattery, &AppleSmartBattery::pollBatteryState), (void*)kExistingBatteryPath);
-		}
-	}
+        }
+    }
 
     return kIOReturnSuccess;
 }
@@ -412,15 +419,15 @@ IOReturn AppleSmartBatteryManager::getBatterySTA(void)
     DebugLog("getBatterySTA called\n");
     
     IOReturn evaluateStatus = fProvider->evaluateInteger("_STA", &fBatterySTA);
-	if (evaluateStatus == kIOReturnSuccess)
+    if (evaluateStatus == kIOReturnSuccess)
     {
-		return fBattery->setBatterySTA(fBatterySTA);
-	}
-    else 
+        return fBattery->setBatterySTA(fBatterySTA);
+    }
+    else
     {
         DebugLog("evaluateObject error 0x%x\n", evaluateStatus);
-		return kIOReturnError;
-	}
+        return kIOReturnError;
+    }
 }
 
 /******************************************************************************
@@ -437,7 +444,7 @@ IOReturn AppleSmartBatteryManager::getBatteryBIF(void)
     DebugLog("validateObject return 0x%x\n", evaluateStatus);
     
     evaluateStatus = fProvider->evaluateObject("_BIF", &fBatteryBIF);
-	if (evaluateStatus == kIOReturnSuccess)
+    if (evaluateStatus == kIOReturnSuccess)
     {
         IOReturn value = kIOReturnError;
         if (OSArray* acpibat_bif = OSDynamicCast(OSArray, fBatteryBIF))
@@ -446,13 +453,13 @@ IOReturn AppleSmartBatteryManager::getBatteryBIF(void)
             value = fBattery->setBatteryBIF(acpibat_bif);
         }
         OSSafeReleaseNULL(fBatteryBIF);
-		return value;
-	} 
-    else 
+        return value;
+    }
+    else
     {
         DebugLog("evaluateObject error 0x%x\n", evaluateStatus);
-		return kIOReturnError;
-	}
+        return kIOReturnError;
+    }
 }
 
 /******************************************************************************
@@ -466,22 +473,22 @@ IOReturn AppleSmartBatteryManager::getBatteryBIX(void)
     
     OSObject *fBatteryBIX = NULL;
     IOReturn evaluateStatus = fProvider->evaluateObject("_BIX", &fBatteryBIX);
-	if (evaluateStatus == kIOReturnSuccess)
+    if (evaluateStatus == kIOReturnSuccess)
     {
         IOReturn value = kIOReturnError;
-		if (OSArray* acpibat_bix = OSDynamicCast(OSArray, fBatteryBIX))
+        if (OSArray* acpibat_bix = OSDynamicCast(OSArray, fBatteryBIX))
         {
             setProperty("Battery Extended Information", acpibat_bix);
             value = fBattery->setBatteryBIX(acpibat_bix);
         }
-		OSSafeReleaseNULL(fBatteryBIX);
-		return value;
-	}
-    else 
+        OSSafeReleaseNULL(fBatteryBIX);
+        return value;
+    }
+    else
     {
         DebugLog("evaluateObject error 0x%x\n", evaluateStatus);
-		return kIOReturnError;
-	}
+        return kIOReturnError;
+    }
 }
 
 /******************************************************************************
@@ -493,24 +500,24 @@ IOReturn AppleSmartBatteryManager::getBatteryBBIX(void)
 {
     DebugLog("getBatteryBBIX called\n");
 
-	OSObject * fBatteryBBIX = NULL;
+    OSObject * fBatteryBBIX = NULL;
     IOReturn evaluateStatus = fProvider->evaluateObject("BBIX", &fBatteryBBIX);
-	if (evaluateStatus == kIOReturnSuccess)
+    if (evaluateStatus == kIOReturnSuccess)
     {
         IOReturn value = kIOReturnError;
-		if (OSArray* acpibat_bbix = OSDynamicCast(OSArray, fBatteryBBIX))
+        if (OSArray* acpibat_bbix = OSDynamicCast(OSArray, fBatteryBBIX))
         {
             setProperty("Battery Extra Information", acpibat_bbix);
             value = fBattery->setBatteryBBIX(acpibat_bbix);
         }
-		OSSafeReleaseNULL(fBatteryBBIX);
-		return value;
-	} 
-    else 
+        OSSafeReleaseNULL(fBatteryBBIX);
+        return value;
+    }
+    else
     {
         DebugLog("evaluateObject error 0x%x\n", evaluateStatus);
-		return kIOReturnError;
-	}
+        return kIOReturnError;
+    }
 }
 
 /******************************************************************************
@@ -522,24 +529,24 @@ IOReturn AppleSmartBatteryManager::getBatteryBST(void)
 {
     DebugLog("getBatteryBST called\n");
 
-	OSObject *fBatteryBST = NULL;
+    OSObject *fBatteryBST = NULL;
     IOReturn evaluateStatus = fProvider->evaluateObject("_BST", &fBatteryBST);
-	if (evaluateStatus == kIOReturnSuccess)
-	{
+    if (evaluateStatus == kIOReturnSuccess)
+    {
         IOReturn value = kIOReturnError;
-		if (OSArray* acpibat_bst = OSDynamicCast(OSArray, fBatteryBST))
+        if (OSArray* acpibat_bst = OSDynamicCast(OSArray, fBatteryBST))
         {
             setProperty("Battery Status", acpibat_bst);
             value = fBattery->setBatteryBST(acpibat_bst);
         }
-		OSSafeReleaseNULL(fBatteryBST);
-		return value;
-	}
-	else
-	{
+        OSSafeReleaseNULL(fBatteryBST);
+        return value;
+    }
+    else
+    {
         DebugLog("evaluateObject error 0x%x\n", evaluateStatus);
-		return kIOReturnError;
-	}
+        return kIOReturnError;
+    }
 }
 
 /*****************************************************************************
