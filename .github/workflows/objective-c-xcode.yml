@@ -46,7 +46,7 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: build_output.zip
           tag: ${{ github.ref }}
-          release_name: HoRNDIS
+          release_name: OS-X-ACPI-Battery-Driver
           body: Update objective-c-xcode.yml
           file_glob: false
           overwrite: true
