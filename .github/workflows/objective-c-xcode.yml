@@ -35,7 +35,7 @@ jobs:
         with:
           name: Artifacts
           path: build/Products/Release
-     - name: Upload build
+      - name: Upload build
         uses: svenstaro/upload-release-action@2.9.0
         if: github.event_name != 'pull_request'
         with:
@@ -46,6 +46,3 @@ jobs:
           body: Update objective-c-xcode.yml
           file_glob: false
           overwrite: true
-         
-
- 
