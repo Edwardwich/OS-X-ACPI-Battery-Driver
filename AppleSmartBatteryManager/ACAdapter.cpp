@@ -199,7 +199,7 @@ void ACPIACAdapter::pollState()
         
         // notify system of change in AC state
         if (IOPMrootDomain* root = getPMRootDomain())
-            root->receivePowerNotification(kIOPMSetACAdaptorConnected | fACConnected ? kIOPMSetValue : 0);
+            root->receivePowerNotification((kIOPMSetACAdaptorConnected | (fACConnected ? kIOPMSetValue : 0)));
         else
             DebugLog("ACPIACAdapter::message could not notify OS about AC status\n");
     }
